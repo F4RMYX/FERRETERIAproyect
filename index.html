@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ferretería Sol Naciente | Punto de Venta Profesional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#f97316',
+                        secondary: '#1e3a8a'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen font-sans">
+
+    <div id="view-login" class="flex items-center justify-center min-h-screen px-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 max-w-md w-full">
+            <div class="text-center mb-6">
+                <div class="bg-orange-100 text-primary w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <h3 class="text-xl font-black text-secondary">Sol Naciente</h3>
+                <p class="text-[11px] text-gray-400 font-medium">Gestión Interna de Inventario y Ventas</p>
+            </div>
+
+                <form id="form-login" class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1 tracking-wider">Usuario</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 text-xs"><i class="fas fa-user"></i></span>
+                            <input type="text" id="login-user" required placeholder="Ej: caja o admin" class="w-full bg-gray-50 border border-gray-100 rounded-xl pl-9 pr-3 py-2 text-xs outline-none focus:ring-1 focus:ring-primary focus:bg-white transition">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1 tracking-wider">Contraseña</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 text-xs"><i class="fas fa-lock"></i></span>
+                            <input type="password" id="login-pass" required placeholder="••••" class="w-full bg-gray-50 border border-gray-100 rounded-xl pl-9 pr-3 py-2 text-xs outline-none focus:ring-1 focus:ring-primary focus:bg-white transition">
+                        </div>
+                    </div>
+
+                    <div id="login-error" class="hidden flex items-center space-x-1.5 bg-red-50 text-red-600 rounded-xl p-2.5 text-[11px] font-bold border border-red-100">
+                        <i class="fas fa-exclamation-circle text-xs"></i>
+                        <span>Credenciales inválidas. Intente de nuevo.</span>
+                    </div>
+
+                    <button type="submit" class="w-full bg-primary hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition transform active:scale-95 duration-100 mt-2">Ingresar al Sistema</button>
+                </form>
+        </div>
+    </div>
+
+    <div id="view-store" class="hidden min-h-screen flex flex-col">
+        <header class="bg-secondary text-white sticky top-0 z-40 shadow-md">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-primary p-1.5 rounded-lg text-xs"><i class="fas fa-store-alt"></i></span>
+                    <h1 class="font-black text-sm uppercase tracking-wider">Sol Naciente <span class="text-[9px] font-normal bg-blue-800 text-blue-200 px-2 py-0.5 rounded ml-1">Punto de Venta</span></h1>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button id="btn-to-admin" onclick="switchView('admin')" class="hidden bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1">
+                        <i class="fas fa-user-shield text-[10px]"></i> <span>Panel Admin</span>
+                    </button>
+                    <button onclick="toggleStoreHistory()" class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1">
+                        <i class="fas fa-history text-[10px]"></i> <span>Ver Caja</span>
+                    </button>
+                    <button onclick="toggleCart()" class="bg-primary hover:bg-orange-600 px-3 py-1.5 rounded-lg font-bold text-xs transition flex items-center space-x-1.5 shadow-sm relative">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Orden</span>
+                        <span id="cart-count" class="bg-white text-secondary text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-black">0</span>
+                    </button>
+                    <button onclick="handleLogout()" class="text-white/70 hover:text-white p-1 text-xs"><i class="fas fa-power-off"></i></button>
+                </div>
+            </div>
+        </header>
+
+        <div id="store-history-section" class="hidden max-w-7xl mx-auto w-full px-4 mt-4 space-y-4">
+            <div class="bg-white border p-4 rounded-2xl shadow-xs">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 gap-2">
+                    <h4 class="font-black text-secondary text-xs uppercase tracking-wider"><i class="fas fa-cash-register mr-1 text-primary"></i> Últimas Ventas Sincronizadas</h4>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="cerrarCaja()" class="bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1">
+                            <i class="fas fa-lock"></i> <span>Cerrar Caja</span>
+                        </button>
+                        <button onclick="toggleStoreHistory()" class="text-gray-400 hover:text-gray-600 text-xs font-bold">Cerrar Historial ×</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-wider border-b">
+                                <th class="p-3">Código Transacción</th>
+                                <th class="p-3">Hora</th>
+                                <th class="p-3">Cliente / Razón Social</th>
+                                <th class="p-3">Tipo Doc</th>
+                                <th class="p-3">Total Cobrado</th>
+                                <th class="p-3">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="store-history-table-body" class="divide-y divide-gray-100">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white border p-4 rounded-2xl shadow-xs">
+                <h4 class="font-black text-secondary text-xs uppercase tracking-wider mb-3"><i class="fas fa-archive mr-1 text-primary"></i> Historial de Cierres de Caja</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-wider border-b">
+                                <th class="p-3">Fecha y Hora</th>
+                                <th class="p-3">Usuario</th>
+                                <th class="p-3">N° Ventas</th>
+                                <th class="p-3">Descuentos</th>
+                                <th class="p-3">Total Cierre</th>
+                                <th class="p-3">Backup</th>
+                            </tr>
+                        </thead>
+                        <tbody id="store-closing-table-body" class="divide-y divide-gray-100">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <main class="max-w-7xl mx-auto px-4 py-4 flex-1 w-full flex flex-col gap-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2 border-b">
+                <div id="store-categories-bar" class="flex items-center space-x-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+                    </div>
+                <div class="flex items-center space-x-2 max-w-sm w-full">
+                    <div class="relative flex-1">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 text-xs"><i class="fas fa-search"></i></span>
+                        <input type="text" id="search-input" oninput="filterProducts()" placeholder="Buscar herramienta..." class="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary shadow-xs">
+                    </div>
+                    <button onclick="openScannerModal()" class="bg-secondary text-white hover:bg-blue-800 p-2 rounded-xl text-xs font-bold transition shadow-xs flex items-center space-x-1">
+                        <i class="fas fa-barcode"></i> <span>Escanear</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+                </div>
+        </main>
+    </div>
+
+    <div id="view-admin" class="hidden min-h-screen bg-gray-100 flex flex-col">
+        <header class="bg-slate-900 text-white shadow">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-blue-600 p-1.5 rounded-lg text-xs"><i class="fas fa-shield-alt"></i></span>
+                    <h2 class="font-black text-xs uppercase tracking-wider">Consola del Administrador</h2>
+                </div>
+                <button onclick="switchView('store')" class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1">
+                    <i class="fas fa-arrow-left"></i> <span>Volver a Tienda</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-5 gap-4 p-4">
+            <nav class="md:col-span-1 bg-slate-800 rounded-2xl p-3 flex flex-col space-y-1 h-fit shadow-sm">
+                <button id="tab-btn-dashboard" onclick="switchAdminTab('dashboard')" class="w-full text-left text-xs font-bold p-2.5 rounded-xl transition flex items-center space-x-2 bg-blue-800 text-white">
+                    <i class="fas fa-chart-pie w-4"></i> <span>Dashboard</span>
+                </button>
+                <button id="tab-btn-inventario" onclick="switchAdminTab('inventario')" class="w-full text-left text-xs font-bold p-2.5 rounded-xl transition flex items-center space-x-2 text-gray-300 hover:bg-slate-700">
+                    <i class="fas fa-boxes w-4"></i> <span>Herramientas</span>
+                </button>
+                <button id="tab-btn-categorias" onclick="switchAdminTab('categorias')" class="w-full text-left text-xs font-bold p-2.5 rounded-xl transition flex items-center space-x-2 text-gray-300 hover:bg-slate-700">
+                    <i class="fas fa-tags w-4"></i> <span>Categorías</span>
+                </button>
+                <button id="tab-btn-caja" onclick="switchAdminTab('caja')" class="w-full text-left text-xs font-bold p-2.5 rounded-xl transition flex items-center space-x-2 text-gray-300 hover:bg-slate-700">
+                    <i class="fas fa-cash-register w-4"></i> <span>Caja</span>
+                </button>
+            </nav>
+
+            <section class="md:col-span-4 bg-white rounded-2xl p-5 shadow-xs border border-gray-100 min-h-[400px]">
+                <div id="sub-admin-dashboard" class="space-y-4">
+                    <h3 class="font-black text-gray-800 text-sm uppercase tracking-wider mb-2">Resumen General</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-gradient-to-br from-green-500 to-emerald-600 text-white p-4 rounded-xl shadow-xs">
+                            <span class="text-[10px] font-bold uppercase tracking-wider block opacity-80">Caja Total Acumulada</span>
+                            <span id="dash-ganancias" class="text-xl font-black block mt-1">Bs. 0.00</span>
+                        </div>
+                        <div class="bg-gradient-to-br from-red-500 to-rose-600 text-white p-4 rounded-xl shadow-xs">
+                            <span class="text-[10px] font-bold uppercase tracking-wider block opacity-80">Alertas Críticas de Stock</span>
+                            <span id="dash-alertas" class="text-xl font-black block mt-1">0 Productos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sub-admin-inventario" class="hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-black text-gray-800 text-sm uppercase tracking-wider">Control de Almacén</h3>
+                        <button onclick="openNewProductModal()" class="bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-bold px-3 py-1.5 rounded-xl shadow transition">
+                            <i class="fas fa-plus-circle mr-1"></i> Nueva Herramienta
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto border rounded-xl">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-wider border-b">
+                                    <th class="p-3">Código</th>
+                                    <th class="p-3">Imagen</th>
+                                    <th class="p-3">Nombre Item</th>
+                                    <th class="p-3">Categoría</th>
+                                    <th class="p-3">Precio Venta</th>
+                                    <th class="p-3">Existencias</th>
+                                    <th class="p-3">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-inventory-body" class="divide-y divide-gray-100">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="sub-admin-categorias" class="hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-black text-gray-800 text-sm uppercase tracking-wider">Categorías / Etiquetas de Producto</h3>
+                        <button onclick="openCategoryModal()" class="bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-bold px-3 py-1.5 rounded-xl shadow transition">
+                            <i class="fas fa-plus-circle mr-1"></i> Nueva Categoría
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-gray-400">Cada categoría que crees aquí aparecerá automáticamente como etiqueta disponible al registrar un nuevo producto (herramienta, tubería, etc.).</p>
+                    <div class="overflow-x-auto border rounded-xl">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-wider border-b">
+                                    <th class="p-3">Id</th>
+                                    <th class="p-3">Nombre / Etiqueta</th>
+                                    <th class="p-3">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categories-admin-list" class="divide-y divide-gray-100">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="sub-admin-caja" class="hidden space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                        <h3 class="font-black text-gray-800 text-sm uppercase tracking-wider">Caja e Historial de Ventas</h3>
+                        <button onclick="cerrarCaja()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow transition">
+                            <i class="fas fa-lock mr-1"></i> Cerrar Caja
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto border rounded-xl">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-wider border-b">
+                                    <th class="p-3">Código Transacción</th>
+                                    <th class="p-3">Hora</th>
+                                    <th class="p-3">Cliente / Razón Social</th>
+                                    <th class="p-3">Tipo Doc</th>
+                                    <th class="p-3">Total Cobrado</th>
+                                    <th class="p-3">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-history-table-body" class="divide-y divide-gray-100">
+                                </tbody>
+                        </table>
+                    </div>
+                    <h4 class="font-black text-gray-700 text-xs uppercase tracking-wider pt-2">Historial de Cierres</h4>
+                    <div class="overflow-x-auto border rounded-xl">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-wider border-b">
+                                    <th class="p-3">Fecha y Hora</th>
+                                    <th class="p-3">Usuario</th>
+                                    <th class="p-3">N° Ventas</th>
+                                    <th class="p-3">Descuentos</th>
+                                    <th class="p-3">Total Cierre</th>
+                                    <th class="p-3">Backup</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-closing-table-body" class="divide-y divide-gray-100">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div id="cart-modal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-end">
+        <div class="bg-white w-full max-w-md h-full flex flex-col shadow-2xl animate-slideLeft">
+            <header class="bg-secondary text-white p-4 flex justify-between items-center">
+                <div class="flex items-center space-x-1.5">
+                    <i class="fas fa-shopping-basket text-primary text-xs"></i>
+                    <h3 class="font-black text-xs uppercase tracking-wider">Detalle del Despacho</h3>
+                </div>
+                <button onclick="toggleCart()" class="text-white/70 hover:text-white font-bold text-sm">Cerrar ×</button>
+            </header>
+            <div id="cart-items" class="flex-1 overflow-y-auto p-4 space-y-3">
+                </div>
+            <footer class="p-4 border-t border-gray-100 bg-gray-50 space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Monto Total:</span>
+                    <span id="cart-total" class="text-base font-black text-secondary">Bs. 0.00</span>
+                </div>
+                <button onclick="openCustomerModal()" class="w-full bg-primary hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl shadow transition flex items-center justify-center space-x-1">
+                    <span>Continuar Facturación</span> <i class="fas fa-arrow-right text-[10px]"></i>
+                </button>
+            </footer>
+        </div>
+    </div>
+
+    <div id="customer-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h4 class="font-black text-secondary text-xs uppercase tracking-wide"><i class="fas fa-id-card mr-1 text-primary"></i> Documentación de Entrega</h4>
+                <button onclick="closeCustomerModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times-circle"></i></button>
+            </div>
+            <form id="order-form" onsubmit="processOrder(event)" class="space-y-3">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Tipo de Comprobante</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="border rounded-xl p-2 flex items-center space-x-2 cursor-pointer hover:bg-gray-50 text-xs font-medium">
+                            <input type="radio" name="doc-type" value="Recibo" checked>
+                            <span>Recibo Simple</span>
+                        </label>
+                        <label class="border rounded-xl p-2 flex items-center space-x-2 cursor-pointer hover:bg-gray-50 text-xs font-medium">
+                            <input type="radio" name="doc-type" value="Factura">
+                            <span>Facturar</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Nombre / Razón Social</label>
+                    <input type="text" id="cli-name" required placeholder="JUAN PEREZ" class="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">NIT / CI</label>
+                    <input type="text" id="cli-doc" required placeholder="5432100 OR" class="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Descuento (%) <span class="text-gray-300">— para venta por mayor</span></label>
+                    <input type="number" id="discount-input" min="0" max="100" step="0.5" value="0" oninput="updateCheckoutPreview()" class="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary">
+                </div>
+                <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-1">
+                    <div class="flex justify-between text-[11px] text-gray-500">
+                        <span>Subtotal</span>
+                        <span id="checkout-subtotal">Bs. 0.00</span>
+                    </div>
+                    <div class="flex justify-between text-[11px] text-rose-500">
+                        <span>Descuento</span>
+                        <span id="checkout-discount-amount">- Bs. 0.00</span>
+                    </div>
+                    <div class="flex justify-between text-xs font-black text-secondary border-t pt-1 mt-1">
+                        <span>Total a Cobrar</span>
+                        <span id="checkout-total-final">Bs. 0.00</span>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-secondary hover:bg-blue-800 text-white font-bold text-xs py-2.5 rounded-xl shadow transition">Emitir Comprobante</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="product-form-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h4 class="font-black text-secondary text-xs uppercase tracking-wide"><i class="fas fa-plus-circle mr-1 text-primary"></i> Agregar al Catálogo</h4>
+                <button onclick="closeNewProductModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times-circle"></i></button>
+            </div>
+            <form id="product-form" onsubmit="handleSaveProduct(event)" class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Código Único</label>
+                        <input type="text" id="prod-code" required placeholder="750100..." class="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Categoría / Etiqueta</label>
+                        <div class="flex items-center space-x-1">
+                            <select id="prod-category-select" required class="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary bg-white">
+                                </select>
+                            <button type="button" onclick="openCategoryModal()" title="Crear nueva categoría" class="shrink-0 bg-secondary hover:bg-blue-800 text-white w-7 h-7 rounded-lg text-xs"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Nombre de la Herramienta</label>
+                    <input type="text" id="prod-name" required placeholder="Martillo de uña Stanley" class="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Precio (Bs.)</label>
+                        <input type="number" id="prod-price" step="0.01" required class="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Stock</label>
+                        <input type="number" id="prod-stock" required min="0" class="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Imagen del Producto</label>
+                    <div class="flex space-x-2 mb-2">
+                        <button type="button" id="img-mode-local" onclick="setImageMode('local')" class="flex-1 text-[11px] font-bold py-1.5 rounded-lg bg-primary text-white transition"><i class="fas fa-camera mr-1"></i> Subir desde mi PC</button>
+                        <button type="button" id="img-mode-url" onclick="setImageMode('url')" class="flex-1 text-[11px] font-bold py-1.5 rounded-lg bg-gray-100 text-gray-500 transition"><i class="fas fa-link mr-1"></i> Usar URL (opcional)</button>
+                    </div>
+                    <div id="img-input-local">
+                        <input type="file" id="prod-img-file" accept="image/*" capture="environment" onchange="handleLocalImageSelected(event)" class="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-xs outline-none file:mr-2 file:text-[10px] file:font-bold file:bg-secondary file:text-white file:border-0 file:rounded-lg file:px-2 file:py-1">
+                    </div>
+                    <div id="img-input-url" class="hidden">
+                        <input type="url" id="prod-img-url" placeholder="https://..." class="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary">
+                    </div>
+                    <img id="img-preview" class="hidden mt-2 w-20 h-20 object-cover rounded-xl border border-gray-200">
+                </div>
+                <button type="submit" class="w-full bg-primary hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl shadow transition">Registrar Herramienta</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="scanner-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-4 space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h4 class="font-black text-secondary text-xs uppercase tracking-wide"><i class="fas fa-barcode mr-1 text-primary"></i> Cámara Trasera</h4>
+                <button onclick="closeScannerModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times-circle"></i></button>
+            </div>
+            <div id="interactive-scanner" class="w-full rounded-xl overflow-hidden bg-gray-100"></div>
+        </div>
+    </div>
+
+    <div id="category-form-modal" class="hidden fixed inset-0 z-[60] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h4 class="font-black text-secondary text-xs uppercase tracking-wide"><i class="fas fa-tags mr-1 text-primary"></i> Nueva Categoría</h4>
+                <button onclick="closeCategoryModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times-circle"></i></button>
+            </div>
+            <form id="category-form" onsubmit="handleSaveCategory(event)" class="space-y-3">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Nombre de la Categoría</label>
+                    <input type="text" id="cat-name" required placeholder="Ej: Herramientas, Tubería, Pintura" class="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary">
+                </div>
+                <button type="submit" class="w-full bg-primary hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl shadow transition">Guardar Categoría</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
