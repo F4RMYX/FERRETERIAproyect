@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const pass = document.getElementById("login-pass").value;
             const errorDiv = document.getElementById("login-error");
 
-            if ((user === "caja" && pass === "1234") || (user === "admin" && pass === "yosoy")) {
+            if ((user === "caja" && pass === "1234") || (user === "admin" && pass === "yosoy1")) {
                 currentUserRole = user;
                 errorDiv.classList.add("hidden");
                 document.getElementById("view-login").classList.add("hidden");
